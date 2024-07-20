@@ -1,35 +1,26 @@
-1. **`decoding_layers.py`**
-----
+# **`decoding_layers.py`**
 `UnrolledRNNDecoder`와 `UnrolledDiagonalRNNDecoder`를 구현하여 jamo 삼중음절의 3단계 RNN 디코딩을 수행합니다.
 
-2. **`threehot_dictionary.py`**
-----
+# **`threehot_dictionary.py`**
 음절과 jamo 삼중음절 ID 간의 변환을 위한 사전 기능을 제공합니다. 이를 통해 순서가 없는 생성이 가능합니다.
 
-3. **`onehot_layers.py`**
-----
+# **`onehot_layers.py`**
 jamo 및 음절 수준의 원-핫 인코딩 및 디코딩 레이어를 포함합니다.
 
-4. **`seq2seq_model.py`**
-----
+# **`seq2seq_model.py`**
 원-핫 및 세-핫 모델을 위한 기본 Seq2Seq 변환기 모델을 구현합니다. 이 모델은 타겟 쪽 임베딩과 디코딩 레이어 간의 가중치 공유를 허용합니다.
 
-5. **`loss_functions.py`**
-----
+# **`loss_functions.py`**
 다양한 손실 함수를 정의하여 모델 학습에 사용됩니다.
 
-6. **`train.py`**
-----
+# **`train.py`**
 모델 학습을 위한 메인 스크립트입니다. 데이터 로딩, 모델 설정, 학습 루프 등을 포함합니다.
 
-7. **`inference.py`**
-----
+# **`inference.py`**
 학습된 모델을 사용하여 새로운 입력 데이터에 대해 추론을 수행하는 스크립트입니다.
 
-8. **`data_loader.py`**
-----
+# **`data_loader.py`**
 데이터셋을 로드하고 전처리하는 기능을 포함합니다.
 
-9. **`utils.py`**
-----
+# **`utils.py`**
 다양한 유틸리티 함수들을 포함하여 코드의 다른 부분에서 공통으로 사용되는 기능을 제공합니다.
