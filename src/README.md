@@ -1,26 +1,32 @@
-# **`decoding_layers.py`**
-`UnrolledRNNDecoder`와 `UnrolledDiagonalRNNDecoder`를 구현하여 jamo 삼중음절의 3단계 RNN 디코딩을 수행합니다.
+# __init.py__ 
+패키지 초기화 파일로, 디렉토리를 패키지로 인식하게 합니다.
 
-# **`threehot_dictionary.py`**
-음절과 jamo 삼중음절 ID 간의 변환을 위한 사전 기능을 제공합니다. 이를 통해 순서가 없는 생성이 가능합니다.
+# common.py
+공통적으로 사용되는 함수 및 클래스를 정의합니다.
 
-# **`onehot_layers.py`**
-jamo 및 음절 수준의 원-핫 인코딩 및 디코딩 레이어를 포함합니다.
+# data_batching.py
+데이터 배칭 관련 기능을 제공하며, 학습 시 데이터셋을 배치 단위로 나누어 처리합니다.
 
-# **`seq2seq_model.py`**
-원-핫 및 세-핫 모델을 위한 기본 Seq2Seq 변환기 모델을 구현합니다. 이 모델은 타겟 쪽 임베딩과 디코딩 레이어 간의 가중치 공유를 허용합니다.
+# decoding_layers.py
+`UnrolledRNNDecoder`와 `UnrolledDiagonalRNNDecoder`를 구현하여 자모(jamo) 삼중음절(triplet)의 3단계 RNN 디코딩을 구현하여 한글 자모를 입력으로 받아 음절을 생성합니다.
 
-# **`loss_functions.py`**
-다양한 손실 함수를 정의하여 모델 학습에 사용됩니다.
+# dictionaries.py
+단어와 인덱스 간의 매핑을 관리하는 사전을 정의합니다.
 
-# **`train.py`**
-모델 학습을 위한 메인 스크립트입니다. 데이터 로딩, 모델 설정, 학습 루프 등을 포함합니다.
+# embedding_layers.py
+임베딩 레이어를 정의하여 입력 데이터를 벡터 형태로 변환합니다.
 
-# **`inference.py`**
-학습된 모델을 사용하여 새로운 입력 데이터에 대해 추론을 수행하는 스크립트입니다.
+# loss_function.py
+다양한 손실 함수를 정의하여 모델 학습에 사용됩니다. 각 손실 함수는 모델의 성능을 평가하고 개선하는 데 중요한 역할을 합니다.
 
-# **`data_loader.py`**
-데이터셋을 로드하고 전처리하는 기능을 포함합니다.
+# perplexity_functions.py
+퍼플렉서티(perplexity)를 계산하는 함수들을 정의하여 모델 성능을 평가합니다.
 
-# **`utils.py`**
-다양한 유틸리티 함수들을 포함하여 코드의 다른 부분에서 공통으로 사용되는 기능을 제공합니다.
+# training.py
+모델 학습을 위한 주요 트레이닝 루프와 관련 기능을 제공합니다.
+
+# transformers.py
+트랜스포머 모델을 정의하고, 이를 통해 Seq2Seq 모델을 구현합니다.
+
+# utils.py
+다양한 유틸리티 함수들을 포함하여 데이터 로드, 모델 저장 및 로깅 등의 작업을 지원합니다.
