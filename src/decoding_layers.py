@@ -178,4 +178,129 @@ class UnrolledDiagonalRNNDecoder(nn.Module):
         # 임베딩에서 내부 hidden 차원으로 가기 위해 전체 dense 레이어를 사용하지만,
         # 내부 hidden 상태 업데이트를 위해 대각선 레이어를 사용합니다.
         # 현재 우리는 항상 hid_dim = emb_dim을 사용합니다.
-        self._A = DiagonalLinear
+        self._A = DiagonalLinear(hidden_size)
+        self._B = DiagonalLinear(hidden_size)
+
+    def forward(self, hidden, force=None):
+        """Threehot triplet 예측
+
+        이 함수는 훈련을 위해 설계되었으며 teacher forcing을 사용하여 음절을 예측합니다. 
+        `force` 파라미터는 예측할 음절의 threehot 하위 문자 레이블을 포함하므로 (seq, batch, 3)의 형태를 가져야 합니다.
+        인덱스 [..., 0]는 첫 번째 하위 문자 클래스 등을 의미합니다.
+
+        `force`가 `None`이면, 모델 자체의 예측을 사용하여 다음 하위 문자를 생성합니다.
+
+        Args:
+            hidden: hidden context 벡터
+            force: 예측을 위한 teacher forcing 값을 포함하는 threehot 텐서
+
+        Returns:
+            logits: 각 하위 문자(i, v, f)에 대한 정규화되지 않은 로짓의 3-튜플
+            preds: 각 로짓 벡터의 argmax
+        """
+        if force is not None:
+            # hidden은 (seq, batch, H)
+            # force는 (seq, batch, 3)
+
+            # force로부터 각 하위 문자 레이블을 가져옴
+            i_labels = force[..., 0]  # (seq, batch)
+            v_labels = force[..., 1]  # (seq, batch)
+
+            # 임베딩 레이어를 통해 레이블 임베딩
+            emb_i = self._reembed_i(i_labels)  # (seq, batch, h)
+            emb_v = self._reembed_v(v_labels)  # (seq, batch, h)
+
+            # RNN unroll
+            h_0 = torch.zeros_like(hidden)  # 초기 hidden 상태
+            h_1 = torch.tanh(self._A(hidden) + self._B(h_0))
+            h_2 = torch.tanh(self._A(emb_i) + self._B(h_1))
+            h_3 = torch.tanh(self._A(emb_v) + self._B(h_2))
+
+            # 각 하위 문자에 대한 로짓 계산
+            logits_i = self._fc_i(h_1)
+            logits_v = self._fc_v(h_2)
+            logits_f = self._fc_f(h_3)
+
+            # 각 로짓에 대해 argmax를 사용하여 예측값 계산
+            pred_i = torch.argmax(logits_i, dim=-1).detach()
+            pred_v = torch.argmax(logits_v, dim=-1).detach()
+            pred_f = torch.argmax(logits_f, dim=-1).detach()
+
+            return (logits_i, logits_v, logits_f), (pred_i, pred_v, pred_f)
+        else:
+            # hidden은 (seq, batch, H)
+            # force는 (seq, batch, 3)
+
+            # 임베딩 레이어를 통해 레이블 임베딩
+            emb_i = self._reembed_i(i_labels)  # (seq, batch, h)
+            emb_v = self._reembed_v(v_labels)  # (seq, batch, h)
+
+            # RNN unroll
+            h_0 = torch.zeros_like(hidden)  # 초기 hidden 상태
+
+            h_1 = torch.tanh(self._A(hidden) + self._B(h_0))
+            logits_i = self._fc_i(h_1)
+            pred_i = torch.argmax(logits_i, dim=-1).detach()
+            emb_i = self._reembed_i(pred_i)
+
+            h_2 = torch.tanh(self._A(emb_i) + self._B(h_1))
+            logits_v = self._fc_v(h_2)
+            pred_v = torch.argmax(logits_v, dim=-1).detach()
+            emb_v = self._reembed_v(pred_v)
+
+            h_3 = torch.tanh(self._A(emb_v) + self._B(h_2))
+            logits_f = self._fc_f(h_3)
+            pred_f = torch.argmax(logits_f, dim=-1).detach()
+
+            return (logits_i, logits_v, logits_f), (pred_i, pred_v, pred_f)
+
+class ThreeHotIndependentDecoder(nn.Module):
+    """
+    독립된 threehot 디코더 (세 자모를 동시에 독립적으로 예측).
+    """
+
+    def __init__(
+        self,
+        dictionary: Union[ThreeHotDict, ThreeHotDictArbitraryOrdering],
+        hidden_size,
+        *_
+    ):
+        """독립된 threehot 디코더 초기화
+
+        Args:
+            dictionary: `ThreeHotDict` 또는 `ThreeHotDictArbitraryOrdering`
+            hidden_size: 모델의 hidden 차원
+        """
+        super(ThreeHotIndependentDecoder, self).__init__()
+
+        # 딕셔너리에서 각 하위 문자의 사이즈를 가져옴
+        size_i, size_v, size_f = dictionary.sizes()
+
+        # 각 하위 문자의 출력을 위한 fully connected 레이어 초기화
+        self._fc_i = nn.Linear(hidden_size, size_i)
+        self._fc_v = nn.Linear(hidden_size, size_v)
+        self._fc_f = nn.Linear(hidden_size, size_f)
+
+    def forward(self, hidden, **_):
+        """독립적으로 threehot triplet 예측
+
+        이 함수는 각 하위 문자를 독립적으로 생성하여 음절 triplet을 예측합니다.
+
+        Args:
+            hidden: hidden context 벡터
+
+        Returns:
+            logits: 각 하위 문자(i, v, f)에 대한 정규화되지 않은 로짓의 3-튜플
+            preds: 각 로짓 벡터의 argmax
+        """
+        # 각 하위 문자에 대한 로짓 계산
+        logits_i = self._fc_i(hidden)
+        logits_v = self._fc_v(hidden)
+        logits_f = self._fc_f(hidden)
+
+        # 각 로짓에 대해 argmax를 사용하여 예측값 계산
+        pred_i = torch.argmax(logits_i, dim=-1).detach()
+        pred_v = torch.argmax(logits_v, dim=-1).detach()
+        pred_f = torch.argmax(logits_f, dim=-1).detach()
+
+        return (logits_i, logits_v, logits_f), (pred_i, pred_v, pred_f)
