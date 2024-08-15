@@ -34,10 +34,10 @@ class AlphabetEmbedding(nn.Module):
         return self.embedding(tokens.long()) * math.sqrt(self.emb_size)  # 임베딩 후 sqrt(임베딩 크기)로 스케일링
 
 
-class ThreeHotEmbedding(nn.Module):
+class ThreeHotEmbedding(nn.Module): # threehot 임베딩 레이어
     """
-    threehot 임베딩 레이어. 여러 패딩 인덱스를 허용하는 `nn.EmbeddingBag`처럼 동작.
-    임베딩을 평균 내고 `sqrt(emb_size)`로 스케일링.
+    여러 패딩 인덱스를 허용하는 `nn.EmbeddingBag`처럼 동작.
+    자모 임베딩 합산 -> 평균 --> `sqrt(emb_size)`로 스케일링 --> 벡터 생성
     """
     def __init__(
         self, dictionary: Union[ThreeHotDict, ThreeHotDictArbitraryOrdering], emb_size
@@ -81,8 +81,8 @@ class ThreeHotEmbedding(nn.Module):
 
 class ThreeHotConcatEmbedding(nn.Module):
     """
-    threehot 임베딩 레이어. `ThreeHotEmbedding`과는 달리 하위 임베딩을 연결한 후
-    dense 레이어를 통해 최종 `emb_size` 출력을 생성.
+    `ThreeHotEmbedding`과는 달리 
+    하위 임베딩을 연결한 후 --> Linear 레이어를 통해 최종 `emb_size` 출력을 생성.
     """
     def __init__(
         self, dictionary: Union[ThreeHotDict, ThreeHotDictArbitraryOrdering], emb_size
