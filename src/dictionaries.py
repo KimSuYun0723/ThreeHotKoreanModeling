@@ -1,14 +1,16 @@
 from .common import *  # common 모듈에서 모든 것을 가져옴
 from .common import _NO_JAMO_TOKEN, _INITIAL_JAMO, _VOWEL_JAMO, _FINAL_JAMO  # common 모듈에서 특정 항목들 가져옴
 
+# 한글 음절을 자모(초성, 중성, 종성)로 분해하여 각각의 자모를 인코딩/디코딩
 class ThreeHotDict:
-    _RESERVED = set(SPECIAL_SYMBOLS + _INITIAL_JAMO + _VOWEL_JAMO + _FINAL_JAMO)  # 예약된 심볼들 설정
+    # 예약된 심볼들 설정 : 인코딩에 사용되지 않을 심볼들 미리 설정
+    _RESERVED = set(SPECIAL_SYMBOLS + _INITIAL_JAMO + _VOWEL_JAMO + _FINAL_JAMO)  
 
     def __init__(self, symbols):
         assert all(s not in self._RESERVED for s in symbols)  # 모든 심볼이 예약된 심볼에 포함되지 않는지 확인
-        self._ini = _INITIAL_JAMO + symbols + SPECIAL_SYMBOLS  # 초성 심볼 설정
-        self._vow = _VOWEL_JAMO + [_NO_JAMO_TOKEN, PAD_TOKEN]  # 중성 심볼 설정
-        self._fin = _FINAL_JAMO + [_NO_JAMO_TOKEN, PAD_TOKEN]  # 종성 심볼 설정
+        self._ini = _INITIAL_JAMO + symbols + SPECIAL_SYMBOLS  # 초성 심볼
+        self._vow = _VOWEL_JAMO + [_NO_JAMO_TOKEN, PAD_TOKEN]  # 중성 심볼
+        self._fin = _FINAL_JAMO + [_NO_JAMO_TOKEN, PAD_TOKEN]  # 종성 심볼
 
         self._ini2idx = {e: i for (i, e) in enumerate(self._ini)}  # 초성 심볼을 인덱스로 매핑
         self._idx2ini = {i: e for (i, e) in enumerate(self._ini)}  # 인덱스를 초성 심볼로 매핑
@@ -38,7 +40,7 @@ class ThreeHotDict:
             self._fin2idx[PAD_TOKEN],
         )  # 패딩 토큰 설정
 
-    def __getitem__(self, ele):
+    def __getitem__(self, ele): # 초성, 중성, 종성 인덱스로 변환
         if ele == PAD_TOKEN:
             return self._pad  # 패딩 토큰일 경우 패딩 인덱스 반환
 

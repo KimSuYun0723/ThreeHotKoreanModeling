@@ -161,7 +161,7 @@ def is_jamo(c):
 
 
 # 자모 삼중 음절을 표준화하는 함수
-def canonicalize_triplets(triplet_seq):
+def canonicalize_triplets(triplet_seq): # 초중종성 튜플
     '''
     Here we canonicalize triplets by:
 
@@ -174,17 +174,17 @@ def canonicalize_triplets(triplet_seq):
     for (i, v, f) in triplet_seq:
 
         if is_full_syllable(i, v, f): # 완전한 음절이면
-            out.extend((i, v, f))
+            out.extend((i, v, f)) # 초중종성 담기
         else:
-            # 패딩
+            # 전부다 패딩 토큰 이거나
             if i == PAD_TOKEN and v == PAD_TOKEN and f == PAD_TOKEN:
                 pass
-            # 영어
+            # 중, 종성 둘다에 자모가 아닌 토큰이 있는데 
             elif v == _NO_JAMO_TOKEN and f == _NO_JAMO_TOKEN:
-                if i == PAD_TOKEN or is_jamo(i):
+                if i == PAD_TOKEN or is_jamo(i): 
                     out.append(UNK_TOKEN)
-                else:
-                    out.append(i)
+                else: # 초성이 패딩 토큰이 아니고 자모도 아니면
+                    out.append(i) # 초성을 빼버림
             # 불완전한 삼중 음절
             else:
                 out.append(UNK_TOKEN)

@@ -14,7 +14,7 @@ from .dictionaries import *
 
 class AlphabetDecoder(nn.Module):
     """
-    `AlphabetDict`를 기반으로 한 원-핫 디코더입니다. 클래스 로짓(logits)과 `argmax` 예측을 반환합니다.
+    `AlphabetDict`를 기반으로 한 원-핫 디코더
     """
     def __init__(self, dictionary: AlphabetDict, hidden_size):
         super(AlphabetDecoder, self).__init__()
@@ -28,13 +28,13 @@ class AlphabetDecoder(nn.Module):
         return logits, torch.argmax(logits, dim=-1).detach()
 
 class UnrolledRNNDecoder(nn.Module):
-    """음절의 각 세 하위 문자를 예측하기 위해 RNN 루프의 3 틱을 계산하는 unrolled RNN입니다.
-
-    이 코드는 전체 크기의 RNN을 사용하고 `tanh(h*Wh + x*Wx)` 항목을 세 번 수동으로 계산합니다.
+    """
+    : 음절의 각 세 하위 문자를 예측하기 위해 RNN 루프의 3 틱을 계산하는 unrolled RNN
+    - 전체 크기의 RNN을 사용하고 `tanh(h*Wh + x*Wx)` 항목을 세 번 수동으로 계산
     """
     def __init__(
         self,
-        dictionary: Union[ThreeHotDict, ThreeHotDictArbitraryOrdering],
+        dictionary: Union[ThreeHotDict, ThreeHotDictArbitraryOrdering], # dictionaries.py
         hidden_size,
     ):
         """Unrolled RNN 디코더 초기화
@@ -46,33 +46,35 @@ class UnrolledRNNDecoder(nn.Module):
         super(UnrolledRNNDecoder, self).__init__()
 
         self.hidden_size = hidden_size
+        
         # 딕셔너리에서 각 하위 문자의 사이즈를 가져옴
         size_i, size_v, size_f = dictionary.sizes()
         self.size_i, self.size_v, self.size_f = size_i, size_v, size_f
+        
         # 딕셔너리에서 패딩 인덱스를 가져옴
         pad_i, pad_v, _ = dictionary.pad()
 
         # 각 하위 문자를 임베딩하기 위한 임베딩 레이어 초기화
-        self._reembed_i = nn.Embedding(size_i, hidden_size, padding_idx=pad_i)
-        self._reembed_v = nn.Embedding(size_v, hidden_size, padding_idx=pad_v)
+        self._reembed_i = nn.Embedding(size_i, hidden_size, padding_idx=pad_i) # 초성 임베딩
+        self._reembed_v = nn.Embedding(size_v, hidden_size, padding_idx=pad_v) # 중성 임베딩
 
         # 각 하위 문자의 출력을 위한 fully connected 레이어 초기화
-        self._fc_i = nn.Linear(hidden_size, size_i)
+        self._fc_i = nn.Linear(hidden_size, size_i) # 초성의 클래스 크기(size_i)만큼의 logits(각 클래스에 대한 예측값)을 제공
         self._fc_v = nn.Linear(hidden_size, size_v)
         self._fc_f = nn.Linear(hidden_size, size_f)
 
         # RNN의 가중치 행렬을 초기화
-        self._A = nn.Linear(hidden_size, hidden_size)
-        self._B = nn.Linear(hidden_size, hidden_size)
+        self._A = nn.Linear(hidden_size, hidden_size) # hidden state와 곱해져 RNN의 다음 단계 hidden state를 계산
+        self._B = nn.Linear(hidden_size, hidden_size) # 이전 hidden state 또는 입력 벡터와 곱해져 RNN의 다음 단계 hidden state를 계산
 
-    def forward(self, hidden, force=None):
-        """Threehot triplet 예측
+    def forward(self, hidden, force=None): # Threehot triplet 예측
+        """
+        : 훈련을 위해 설계되었으며 teacher forcing을 사용하여 음절을 예측
+        `force` 파라미터는 예측할 음절의 threehot 하위 문자 레이블을 포함하므로 
+        (seq, batch, 3)의 형태를 가짐.
+        인덱스 [..., 0]는 첫 번째 하위 문자 클래스 등을 의미함
 
-        이 함수는 훈련을 위해 설계되었으며 teacher forcing을 사용하여 음절을 예측합니다. 
-        `force` 파라미터는 예측할 음절의 threehot 하위 문자 레이블을 포함하므로 (seq, batch, 3)의 형태를 가져야 합니다.
-        인덱스 [..., 0]는 첫 번째 하위 문자 클래스 등을 의미합니다.
-
-        `force`가 `None`이면, 모델 자체의 예측을 사용하여 다음 하위 문자를 생성합니다.
+        `force`=`None` --> 모델 자체의 예측을 사용하여 다음 하위 문자를 생성
 
         Args:
             hidden: hidden context 벡터
@@ -80,7 +82,7 @@ class UnrolledRNNDecoder(nn.Module):
 
         Returns:
             logits: 각 하위 문자(i, v, f)에 대한 정규화되지 않은 로짓의 3-튜플
-            preds: 각 로짓 벡터의 argmax
+            preds: 각 로짓 벡터의 argmax(가장 큰 값, predictions)
         """
         if force is not None:
             # hidden은 (seq, batch, H)
@@ -112,6 +114,7 @@ class UnrolledRNNDecoder(nn.Module):
 
             return (logits_i, logits_v, logits_f), (pred_i, pred_v, pred_f)
 
+        # 모델 자체의 예측을 사용하여 다음 하위 문자를 생성
         else:
             # hidden은 (seq, batch, H)
             # force는 (seq, batch, 3)
