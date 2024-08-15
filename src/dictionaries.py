@@ -1,5 +1,5 @@
-from .common import *  # common 모듈에서 모든 것을 가져옴
-from .common import _NO_JAMO_TOKEN, _INITIAL_JAMO, _VOWEL_JAMO, _FINAL_JAMO  # common 모듈에서 특정 항목들 가져옴
+from src.common import *  # common 모듈에서 모든 것을 가져옴
+from src.common import _NO_JAMO_TOKEN, _INITIAL_JAMO, _VOWEL_JAMO, _FINAL_JAMO  # common 모듈에서 특정 항목들 가져옴
 
 # 한글 음절을 자모(초성, 중성, 종성)로 분해하여 각각의 자모를 인코딩/디코딩
 class ThreeHotDict:
@@ -14,8 +14,10 @@ class ThreeHotDict:
 
         self._ini2idx = {e: i for (i, e) in enumerate(self._ini)}  # 초성 심볼을 인덱스로 매핑
         self._idx2ini = {i: e for (i, e) in enumerate(self._ini)}  # 인덱스를 초성 심볼로 매핑
+
         self._vow2idx = {e: i for (i, e) in enumerate(self._vow)}  # 중성 심볼을 인덱스로 매핑
         self._idx2vow = {i: e for (i, e) in enumerate(self._vow)}  # 인덱스를 중성 심볼로 매핑
+
         self._fin2idx = {e: i for (i, e) in enumerate(self._fin)}  # 종성 심볼을 인덱스로 매핑
         self._idx2fin = {i: e for (i, e) in enumerate(self._fin)}  # 인덱스를 종성 심볼로 매핑
 
@@ -24,16 +26,19 @@ class ThreeHotDict:
             self._vow2idx[_NO_JAMO_TOKEN],
             self._fin2idx[_NO_JAMO_TOKEN],
         )  # 시작 토큰 설정
+
         self._eos = (
             self._ini2idx[EOS_TOKEN],
             self._vow2idx[_NO_JAMO_TOKEN],
             self._fin2idx[_NO_JAMO_TOKEN],
         )  # 종료 토큰 설정
+
         self._unk = (
             self._ini2idx[UNK_TOKEN],
             self._vow2idx[_NO_JAMO_TOKEN],
             self._fin2idx[_NO_JAMO_TOKEN],
         )  # 알 수 없는 토큰 설정
+
         self._pad = (
             self._ini2idx[PAD_TOKEN],
             self._vow2idx[PAD_TOKEN],
@@ -90,7 +95,6 @@ class ThreeHotDict:
 
     def pad(self):
         return self._pad  # 패딩 토큰 반환
-
 
 class ThreeHotDictArbitraryOrdering:
     _RESERVED = set(SPECIAL_SYMBOLS + _INITIAL_JAMO + _VOWEL_JAMO + _FINAL_JAMO)  # 예약된 심볼들 설정
@@ -260,3 +264,17 @@ class AlphabetDict:
 
     def pad(self):
         return self._pad  # 패딩 토큰 반환
+    
+
+# python -m src.dictionaries
+
+if __name__ == "__main__":
+    # 테스트 코드
+    three_hot_dict = ThreeHotDict(["기", "계", "번", "역"])
+    encoded = three_hot_dict.encode("기계")
+    print("Encoded:", encoded)
+# Encoded: [(0, 20, 27), (0, 7, 27)]
+
+    decoded = three_hot_dict.decode(encoded)
+    print("Decoded:", decoded)
+# Decoded: [('ᄀ', 'ᅵ', '☒'), ('ᄀ', 'ᅨ', '☒')]
